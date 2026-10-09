@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Internet móvil: participación por operador</title>
+<style>
+:root{--bg:#fff;--ink:#000;--muted:#555;--red:#d0021b;color-scheme:light;box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Helvetica Neue",Helvetica,Arial,sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:28px 20px 40px}
+h1{margin:0 0 6px;padding-top:12px;border-top:5px solid var(--red);font:700 28px/1.15 Georgia,"Times New Roman",serif}
+.sub{margin:0 0 18px;color:var(--muted);font-size:14px}
+button{font:inherit;color:inherit;cursor:pointer}
+.tabs{display:flex;border-bottom:1px solid #ccc;margin-bottom:16px}
+.tab{background:none;border:0;border-bottom:4px solid transparent;padding:10px 14px;font-weight:700;font-size:15px;margin-bottom:-1px}
+.tab[aria-pressed=true]{border-bottom-color:var(--red)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.pill{background:#fff;border:1px solid #000;border-radius:999px;padding:6px 13px;font-size:14px}
+.pill[aria-pressed=true]{background:var(--red);border-color:var(--red);color:#fff}
+.pills.sm .pill{font-size:13px;padding:4px 11px}
+.one{display:grid;grid-template-columns:220px 1fr;gap:26px;align-items:center;margin-top:8px}
+.donut{position:relative;width:100%;max-width:220px;aspect-ratio:1;border-radius:50%;margin:auto}
+.hole{position:absolute;inset:24%;background:#fff;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+.hole b{font:700 22px Georgia,serif}.hole span{font-size:13px;color:var(--muted)}
+.row{display:grid;grid-template-columns:86px 1fr 66px;gap:10px;align-items:center;width:100%;background:none;border:0;padding:8px 4px;text-align:left}
+.row:hover,.row:focus-visible{background:#f4f4f4;outline:none}
+.nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px}
+.track{display:block;height:12px;background:#efefef}
+.fill{display:block;height:100%;width:0;transition:width .6s cubic-bezier(.2,.7,.2,1)}
+.num{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;font-size:14px}
+.srow{display:grid;grid-template-columns:82px 1fr;gap:10px;align-items:center;margin:10px 0}
+.cn{font-weight:700;font-size:14px}
+.stack{display:flex;height:56px;overflow:hidden}
+.seg{padding:7px 6px;font-size:11px;line-height:1.3;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-right:1px solid #fff;min-width:0}
+.seg b{display:block;font-size:12px}
+.orow{display:grid;grid-template-columns:1fr 66px;gap:10px;align-items:center}
+.orow b{text-align:right;font-size:14px;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12px;color:var(--muted);margin-top:14px}
+.legend i{display:inline-block;width:11px;height:11px;margin-right:5px;vertical-align:-1px}
+.note{font-size:13px;color:var(--muted);margin:16px 0 0;line-height:1.5}
+.note b{color:var(--ink)}
+.src{margin-top:22px;padding-top:10px;border-top:1px solid #ddd;font-size:12px;color:var(--muted)}
+@media (max-width:560px){.one{grid-template-columns:1fr;gap:16px}.srow{grid-template-columns:70px 1fr}}
+@media (prefers-reduced-motion:reduce){.fill{transition:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Internet móvil: participación por operador</h1>
+  <p class="sub">Elige un país o compara varios.</p>
+  <div id="app"></div>
+  <div class="src">Fuente: regulador de cada país.</div>
+</div>
+<script>
+(function(){
+var D={
+ "Colombia":[["Claro",57.23],["Tigo",17.36],["Movistar",18.46],["WOM",4.83],["Otros",2.12]],
+ "España":[["Orange",40.71],["Movistar",26.30],["Vodafone",18.56],["Digi",12.55],["Otros",1.88]],
+ "México":[["Telcel",56.17],["AT&T",16.55],["Telefónica",14.97],["Bait",8.22],["Otros",4.09]],
+ "Chile":[["Entel",35.2],["WOM",24.3],["ClaroVTR",21],["Movistar",18.5],["Otros",1]],
+ "Brasil":[["Vivo",37.9],["Claro",33.2],["TIM",22.4],["Otros",6.5]],
+ "Perú":[["Claro",35.29],["Entel",22.37],["Bitel",22.33],["Movistar",19.81]]
+};
+var C=Object.keys(D),PAL=["#d0021b","#111","#5c5c5c","#9a9a9a","#c8c8c8"],TXT=["#fff","#fff","#fff","#000","#000"];
+var S={mode:"uno",one:"Colombia",sel:C.slice(),view:"pais",op:"Claro"},R=[];
+var app=document.getElementById("app");
+var f=n=>n.toFixed(2).replace(".",","),key=n=>n.toLowerCase();
+var esc=s=>s.replace(/&/g,"&amp;").replace(/</g,"&lt;");
+function rows(c){
+  var a=D[c].map(x=>({n:x[0],v:x[1]})),r=a.filter(x=>x.n!=="Otros").sort((p,q)=>q.v-p.v);
+  r.forEach((x,i)=>{x.c=PAL[i];x.t=TXT[i]});
+  a.filter(x=>x.n==="Otros").forEach(x=>{x.c="#e6e6e6";x.t="#000";r.push(x)});
+  return r;
+}
+var OPS=(function(){var m={};C.forEach(c=>D[c].forEach(x=>{var k=key(x[0]);if(k==="otros")return;(m[k]=m[k]||{n:x[0],c:0}).c++}));
+  return Object.keys(m).filter(k=>m[k].c>1).map(k=>m[k].n)})();
+var pill=(a,v,l,on)=>'<button class="pill" data-a="'+a+'" data-v="'+esc(v)+'" data-k="'+a+':'+esc(v)+'" aria-pressed="'+on+'">'+esc(l)+'</button>';
+var tab=(v,l)=>'<button class="tab" data-a="mode" data-v="'+v+'" data-k="mode:'+v+'" aria-pressed="'+(S.mode===v)+'">'+l+'</button>';
+
+function one(){
+  R=rows(S.one);var g=[],a=0;
+  R.forEach(x=>{g.push(x.c+" "+a+"% "+(a+x.v)+"%");a+=x.v});
+  if(a<99.99)g.push("#fff "+a+"% 100%");
+  var h='<div class="pills">'+C.map(c=>pill("one",c,c,c===S.one)).join("")+"</div>";
+  h+='<div class="one"><div class="donut" style="background:conic-gradient('+g.join(",")+')"><div class="hole"><b id="dv">'+f(R[0].v)+' %</b><span id="dn">'+esc(R[0].n)+'</span></div></div>';
+  h+='<div id="list">'+R.map((x,i)=>'<button class="row" data-i="'+i+'"><span class="nm">'+esc(x.n)+'</span><span class="track"><span class="fill" style="background:'+x.c+'" data-w="'+x.v+'"></span></span><span class="num">'+f(x.v)+' %</span></button>').join("")+"</div></div>";
+  h+='<p class="note"><b>'+esc(R[0].n)+"</b> lidera con "+f(R[0].v)+" %. Los dos primeros operadores concentran "+f(R[0].v+R[1].v)+" %."+(Math.abs(a-100)>0.05?" Los datos de este país suman "+f(a)+" %.":"")+"</p>";
+  return h;
+}
+function seg(x){
+  var s=x.v>=9?"<b>"+esc(x.n)+"</b>"+f(x.v)+" %":"";
+  return '<div class="seg" title="'+esc(x.n)+": "+f(x.v)+' %" style="width:'+x.v+"%;background:"+x.c+";color:"+x.t+'">'+s+"</div>";
+}
+function comp(){
+  var h='<div class="pills">'+C.map(c=>pill("tog",c,c,S.sel.includes(c))).join("")+"</div>";
+  h+='<div class="pills sm">'+pill("view","pais","Por país",S.view==="pais")+pill("view","op","Por operador",S.view==="op")+"</div>";
+  var cs=C.filter(c=>S.sel.includes(c));
+  if(S.view==="pais"){
+    cs.sort((a,b)=>rows(b)[0].v-rows(a)[0].v);
+    h+=cs.map(c=>'<div class="srow"><span class="cn">'+c+'</span><div class="stack">'+rows(c).map(seg).join("")+"</div></div>").join("");
+    h+='<div class="legend"><span><i style="background:#d0021b"></i>1.º</span><span><i style="background:#111"></i>2.º</span><span><i style="background:#5c5c5c"></i>3.º</span><span><i style="background:#9a9a9a"></i>4.º</span><span><i style="background:#c8c8c8"></i>5.º</span><span><i style="background:#e6e6e6"></i>Otros</span></div>';
+    var t=rows(cs[0]);
+    h+='<p class="note">Ordenados por la cuota del líder. Mayor concentración: <b>'+cs[0]+"</b>, donde "+esc(t[0].n)+" tiene "+f(t[0].v)+" %.</p>";
+  }else{
+    var d=cs.map(c=>({c:c,x:rows(c).find(y=>key(y.n)===key(S.op))})).filter(o=>o.x).sort((a,b)=>b.x.v-a.x.v);
+    h+='<div class="pills sm">'+OPS.map(o=>pill("op",o,o,o===S.op)).join("")+"</div>";
+    h+=d.map((o,i)=>'<div class="srow"><span class="cn">'+o.c+'</span><div class="orow"><span class="track"><span class="fill" style="background:'+(i?"#222":"var(--red)")+'" data-w="'+o.x.v+'"></span></span><b>'+f(o.x.v)+" %</b></div></div>").join("");
+    var miss=cs.filter(c=>!d.some(o=>o.c===c));
+    h+='<p class="note">'+(miss.length?"Sin datos de "+esc(S.op)+" en: "+miss.join(", ")+". ":"")+(S.op==="Claro"&&cs.includes("Chile")?"En Chile, ClaroVTR se muestra por separado. ":"")+"Solo aparecen operadores que están en más de un país.</p>";
+  }
+  return h;
+}
+function render(){
+  var fk=document.activeElement&&document.activeElement.dataset?document.activeElement.dataset.k:null;
+  app.innerHTML='<div class="tabs">'+tab("uno","Un país")+tab("comp","Comparar países")+"</div>"+(S.mode==="uno"?one():comp());
+  requestAnimationFrame(()=>requestAnimationFrame(()=>app.querySelectorAll(".fill[data-w]").forEach(e=>{e.style.width=e.dataset.w+"%"})));
+  if(fk){var el=app.querySelector('[data-k="'+fk+'"]');if(el)el.focus()}
+}
+function center(i){var x=R[i];if(!x)return;document.getElementById("dv").textContent=f(x.v)+" %";document.getElementById("dn").textContent=x.n}
+app.addEventListener("click",e=>{
+  var t=e.target.closest("[data-a]"),a,v;
+  if(t){a=t.dataset.a;v=t.dataset.v;
+    if(a==="mode")S.mode=v;else if(a==="one")S.one=v;else if(a==="view")S.view=v;else if(a==="op")S.op=v;
+    else if(a==="tog"){var i=S.sel.indexOf(v);if(i>-1){if(S.sel.length>1)S.sel.splice(i,1)}else S.sel.push(v)}
+    render();return}
+  var r=e.target.closest(".row");if(r)center(+r.dataset.i);
+});
+function hov(e){var r=e.target.closest(".row");if(r)center(+r.dataset.i)}
+function out(e){if(e.target.closest("#list"))center(0)}
+app.addEventListener("mouseover",hov);app.addEventListener("focusin",hov);
+app.addEventListener("mouseleave",()=>center(0));
+app.addEventListener("focusout",out);
+render();
+})();
+</script>
+</body>
+</html>
